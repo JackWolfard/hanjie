@@ -105,7 +105,7 @@ fn handle_cell_action(
     mut ev_cellaction: EventReader<CellActionEvent>,
     mut query: Query<(&mut Cell, &mut Sprite)>,
 ) {
-    for ev in ev_cellaction.iter() {
+    for ev in ev_cellaction.read() {
         if let Ok((mut cell, mut sprite)) = query.get_mut(ev.entity) {
             apply_action_to_cell(ev.action, &mut cell);
             update_cell_sprite(&cell, &mut sprite);

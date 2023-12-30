@@ -100,7 +100,7 @@ fn handle_world_action(
     mut ev_cellaction: EventWriter<CellActionEvent>,
     query: Query<(Entity, &Location, &GlobalTransform), With<Cell>>,
 ) {
-    for ev in ev_worldaction.iter() {
+    for ev in ev_worldaction.read() {
         for (entity, location, transform) in query.iter() {
             if is_inside_cell(transform.translation(), ev.position) {
                 debug!(
