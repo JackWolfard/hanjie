@@ -20,4 +20,4 @@ $ cargo run
 
 - Left click: toggle cell
 - Right click: cross out cell
-- Middle click: mark cell
+- Middle click (or shift + left click): mark cell

@@ -56,9 +56,17 @@ fn convert_camera_coords_to_world(
         .and_then(|cursor| camera.viewport_to_world_2d(camera_transform, cursor))
 }
 
-fn get_action_from_mouse_click(buttons: Res<Input<MouseButton>>) -> Option<Action> {
+fn get_action_from_mouse_click(
+    buttons: Res<Input<MouseButton>>,
+    keys: Res<Input<KeyCode>>,
+) -> Option<Action> {
+    let shift = keys.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight]);
     if buttons.just_pressed(MouseButton::Left) {
-        Some(Action::Toggle)
+        if shift {
+            Some(Action::Mark)
+        } else {
+            Some(Action::Toggle)
+        }
     } else if buttons.just_pressed(MouseButton::Middle) {
         Some(Action::Mark)
     } else if buttons.just_pressed(MouseButton::Right) {
@@ -70,12 +78,13 @@ fn get_action_from_mouse_click(buttons: Res<Input<MouseButton>>) -> Option<Actio
 
 fn handle_click(
     buttons: Res<Input<MouseButton>>,
+    keys: Res<Input<KeyCode>>,
     camera_q: Query<(&Camera, &GlobalTransform), With<MainCamera>>,
     window_q: Query<&Window>,
     primary_window_q: Query<&Window, With<PrimaryWindow>>,
     mut ev_worldaction: EventWriter<WorldActionEvent>,
 ) {
-    if let Some(action) = get_action_from_mouse_click(buttons) {
+    if let Some(action) = get_action_from_mouse_click(buttons, keys) {
         let (camera, camera_transform) = camera_q.single();
         let primary_window = primary_window_q.single();
         let window = match camera.target {

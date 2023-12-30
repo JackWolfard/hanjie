@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Upgrade Bevy to v0.12.
+- Mark also with shift + left click in addition to middle click.
 
 ## [0.1.0] - 2023-12-30
 
