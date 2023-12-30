@@ -4,7 +4,16 @@
 [package]
 name = "hanjie"
 version = "0.1.0"
+authors = ["Jack Wolfard"]
 edition = "2021"
+rust-version = "1.75"
+description = "A nonogram game engine using Bevy"
+documentation = "https://docs.rs/bevy"
+readme = "README.md"
+repository = "https://github.com/jackwolfard/hanjie"
+license-file = "LICENSE"
+keywords = ["nonogram", "picross", "griddlers", "puzzle"]
+categories = ["game-development"]
 
 [dependencies]
 bevy = "0.11.2"
