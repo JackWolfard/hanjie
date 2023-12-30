@@ -15,3 +15,9 @@ $ git clone https://github.com/JackWolfard/hanjie.git
 $ cd hanjie
 $ cargo run
 ```
+
+## Controls
+
+- Left click: toggle cell
+- Right click: cross out cell
+- Middle click: mark cell
