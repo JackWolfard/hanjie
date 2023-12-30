@@ -11,7 +11,7 @@ description = "A nonogram game engine using Bevy"
 documentation = "https://docs.rs/bevy"
 readme = "README.md"
 repository = "https://github.com/jackwolfard/hanjie"
-license-file = "LICENSE"
+license = "Apache-2.0"
 keywords = ["nonogram", "picross", "griddlers", "puzzle"]
 categories = ["game-development"]
 

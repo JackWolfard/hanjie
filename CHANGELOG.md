@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Change license metadata in Cargo manifest to Apache 2.0 instead of file path.
+
 ## [0.1.1] - 2023-12-30
 
 ### Changed
