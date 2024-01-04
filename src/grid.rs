@@ -4,17 +4,28 @@
 
 use bevy::prelude::*;
 
-use crate::{
-    constant::{GRID_COLUMNS, GRID_ROWS},
-    game::cell::CellBundle,
-};
+use crate::cell::CellBundle;
+
+const GRID_ROWS: i32 = 5;
+const GRID_COLUMNS: i32 = 5;
 
 pub struct GridPlugin;
 
 impl Plugin for GridPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(PreStartup, presetup)
-            .add_systems(Startup, setup);
+        app.add_systems(
+            Startup,
+            (
+                spawn_grid,
+                // flush commands
+                spawn_cells,
+            )
+                .chain(),
+        )
+        .add_systems(
+            Startup,
+            apply_deferred.after(spawn_grid).before(spawn_cells),
+        );
     }
 }
 
@@ -44,11 +55,11 @@ impl GridBundle {
     }
 }
 
-fn presetup(mut commands: Commands) {
+fn spawn_grid(mut commands: Commands) {
     commands.spawn((GridBundle::new(GRID_COLUMNS, GRID_ROWS), Grid));
 }
 
-fn setup(mut commands: Commands, query: Query<(Entity, &GridSize), With<Grid>>) {
+fn spawn_cells(mut commands: Commands, query: Query<(Entity, &GridSize), With<Grid>>) {
     let (e, size) = query.single();
     commands.entity(e).with_children(|parent| {
         (0..size.columns).for_each(|column| {

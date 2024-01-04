@@ -8,43 +8,17 @@ use bevy::{
     window::{PrimaryWindow, WindowRef},
 };
 
-use crate::game::{
-    cell::{is_inside_cell, Cell, CellActionEvent, CellPlugin, Location},
-    grid::GridPlugin,
+use crate::{
+    action::{Action, WorldActionEvent},
+    camera::MainCamera,
 };
 
-mod cell;
-mod grid;
+pub struct InputPlugin;
 
-pub struct GamePlugin;
-
-impl Plugin for GamePlugin {
+impl Plugin for InputPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((CellPlugin, GridPlugin))
-            .add_systems(PreStartup, setup)
-            .add_systems(Update, (handle_click, handle_world_action))
-            .add_event::<WorldActionEvent>();
+        app.add_systems(Update, handle_click);
     }
-}
-
-#[derive(Component)]
-struct MainCamera;
-
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub enum Action {
-    Toggle,
-    CrossOut,
-    Mark,
-}
-
-#[derive(Event)]
-struct WorldActionEvent {
-    position: Vec2,
-    action: Action,
-}
-
-fn setup(mut commands: Commands) {
-    commands.spawn((Camera2dBundle::default(), MainCamera));
 }
 
 fn convert_camera_coords_to_world(
@@ -57,7 +31,7 @@ fn convert_camera_coords_to_world(
         .and_then(|cursor| camera.viewport_to_world_2d(camera_transform, cursor))
 }
 
-fn get_action_from_mouse_click(
+fn map_click_to_action(
     buttons: Res<Input<MouseButton>>,
     keys: Res<Input<KeyCode>>,
 ) -> Option<Action> {
@@ -85,7 +59,7 @@ fn handle_click(
     primary_window_q: Query<&Window, With<PrimaryWindow>>,
     mut ev_worldaction: EventWriter<WorldActionEvent>,
 ) {
-    if let Some(action) = get_action_from_mouse_click(buttons, keys) {
+    if let Some(action) = map_click_to_action(buttons, keys) {
         let (camera, camera_transform) = camera_q.single();
         let primary_window = primary_window_q.single();
         let window = match camera.target {
@@ -101,27 +75,6 @@ fn handle_click(
                 position.x, position.y
             );
             ev_worldaction.send(WorldActionEvent { position, action })
-        }
-    }
-}
-
-fn handle_world_action(
-    mut ev_worldaction: EventReader<WorldActionEvent>,
-    mut ev_cellaction: EventWriter<CellActionEvent>,
-    query: Query<(Entity, &Location, &GlobalTransform), With<Cell>>,
-) {
-    for ev in ev_worldaction.read() {
-        for (entity, location, transform) in query.iter() {
-            if is_inside_cell(transform.translation(), ev.position) {
-                debug!(
-                    "{:?} Cell({},{}) ",
-                    ev.action, location.column, location.row
-                );
-                ev_cellaction.send(CellActionEvent {
-                    entity,
-                    action: ev.action,
-                });
-            }
         }
     }
 }

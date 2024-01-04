@@ -4,7 +4,7 @@
 
 use bevy::prelude::*;
 
-use crate::game::Action;
+use crate::action::{Action, CellActionEvent};
 
 const CELL_CLEARED_COLOR: Color = Color::rgb(0.8, 0.8, 0.8);
 const CELL_FILLED_COLOR: Color = Color::rgb(0.36, 0.58, 0.66);
@@ -18,15 +18,8 @@ pub struct CellPlugin;
 impl Plugin for CellPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(PostStartup, print_cell_location)
-            .add_systems(Update, handle_cell_action)
-            .add_event::<CellActionEvent>();
+            .add_systems(Update, handle_cell_action);
     }
-}
-
-#[derive(Event)]
-pub struct CellActionEvent {
-    pub entity: Entity,
-    pub action: Action,
 }
 
 #[derive(Component)]
@@ -96,10 +89,10 @@ pub fn is_inside_cell(cell_position: Vec3, position: Vec2) -> bool {
         cell_position.x - CELL_SIZE / 2.0,
         cell_position.y - CELL_SIZE / 2.0,
     );
-    return position.x >= c.x
+    position.x >= c.x
         && position.y >= c.y
         && position.x <= c.x + CELL_SIZE
-        && position.y <= c.y + CELL_SIZE;
+        && position.y <= c.y + CELL_SIZE
 }
 
 fn handle_cell_action(
