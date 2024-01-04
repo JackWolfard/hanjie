@@ -1,5 +1,6 @@
 <!--
-SPDX-FileCopyrightText: Copyright (c) 2023 Jack Wolfard
+SPDX-FileCopyrightText: 2023-2024 Jack Wolfard
+
 SPDX-License-Identifier: Apache-2.0
 -->
 
