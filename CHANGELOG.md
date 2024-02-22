@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Puzzle selection for 2D demo.
+- Inspect feature using `jakobhellermann/bevy-inspector-egui`
+
 ### Changed
 
 - Comply with [REUSE standard](https://reuse.software/).

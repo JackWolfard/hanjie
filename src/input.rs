@@ -9,15 +9,26 @@ use bevy::{
 };
 
 use crate::{
-    action::{Action, WorldActionEvent},
+    action::{Action, GameActionEvent},
+    app::AppState,
     camera::MainCamera,
+    schedule::{InGameSet, PuzzleSelectSet},
 };
 
 pub struct InputPlugin;
 
 impl Plugin for InputPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, handle_click);
+        app.add_systems(
+            Update,
+            (handle_game_key_press, handle_game_click)
+                .chain()
+                .in_set(InGameSet::UserInput),
+        )
+        .add_systems(
+            Update,
+            bevy::window::close_on_esc.in_set(PuzzleSelectSet::UserInput),
+        );
     }
 }
 
@@ -51,13 +62,19 @@ fn map_click_to_action(
     }
 }
 
-fn handle_click(
+fn handle_game_key_press(mut next_state: ResMut<NextState<AppState>>, keys: Res<Input<KeyCode>>) {
+    if keys.just_pressed(KeyCode::Escape) {
+        next_state.set(AppState::PuzzleSelect);
+    }
+}
+
+fn handle_game_click(
     buttons: Res<Input<MouseButton>>,
     keys: Res<Input<KeyCode>>,
     camera_q: Query<(&Camera, &GlobalTransform), With<MainCamera>>,
     window_q: Query<&Window>,
     primary_window_q: Query<&Window, With<PrimaryWindow>>,
-    mut ev_worldaction: EventWriter<WorldActionEvent>,
+    mut ev_worldaction: EventWriter<GameActionEvent>,
 ) {
     if let Some(action) = map_click_to_action(buttons, keys) {
         let (camera, camera_transform) = camera_q.single();
@@ -74,7 +91,7 @@ fn handle_click(
                 "handle_click: {action:?} click at ({},{})",
                 position.x, position.y
             );
-            ev_worldaction.send(WorldActionEvent { position, action })
+            ev_worldaction.send(GameActionEvent { position, action })
         }
     }
 }

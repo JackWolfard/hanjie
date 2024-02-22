@@ -18,6 +18,11 @@ categories = ["game-development"]
 
 [dependencies]
 bevy = "0.12"
+bevy-inspector-egui = { version = "0.22", optional = true }
+
+[features]
+debug = []
+inspect = ["dep:bevy-inspector-egui"]
 
 # Enable max optimizations for dependencies, but not for our code:
 [profile.dev.package."*"]

@@ -4,15 +4,18 @@
 
 use bevy::prelude::*;
 
-use crate::cell::{is_inside_cell, Cell, Location};
+use crate::{
+    cell::{is_inside_cell, Cell, Location},
+    schedule::InGameSet,
+};
 
 pub struct ActionPlugin;
 
 impl Plugin for ActionPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<WorldActionEvent>()
+        app.add_event::<GameActionEvent>()
             .add_event::<CellActionEvent>()
-            .add_systems(Update, handle_world_action);
+            .add_systems(Update, handle_world_action.in_set(InGameSet::Events));
     }
 }
 
@@ -24,7 +27,7 @@ pub enum Action {
 }
 
 #[derive(Event)]
-pub struct WorldActionEvent {
+pub struct GameActionEvent {
     pub position: Vec2,
     pub action: Action,
 }
@@ -36,7 +39,7 @@ pub struct CellActionEvent {
 }
 
 fn handle_world_action(
-    mut ev_worldaction: EventReader<WorldActionEvent>,
+    mut ev_worldaction: EventReader<GameActionEvent>,
     mut ev_cellaction: EventWriter<CellActionEvent>,
     query: Query<(Entity, &Location, &GlobalTransform), With<Cell>>,
 ) {

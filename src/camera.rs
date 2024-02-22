@@ -10,7 +10,7 @@ pub struct CameraPlugin;
 
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(PreStartup, setup)
+        app.add_systems(PreStartup, spawn_camera)
             .insert_resource(ClearColor(BACKGROUND_COLOR));
     }
 }
@@ -18,6 +18,6 @@ impl Plugin for CameraPlugin {
 #[derive(Component)]
 pub struct MainCamera;
 
-fn setup(mut commands: Commands) {
+fn spawn_camera(mut commands: Commands) {
     commands.spawn((Camera2dBundle::default(), MainCamera));
 }

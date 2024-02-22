@@ -4,7 +4,7 @@
 
 use bevy::prelude::*;
 
-use crate::cell::CellBundle;
+use crate::{app::AppState, cell::CellBundle, schedule::InGameSet};
 
 const GRID_ROWS: i32 = 5;
 const GRID_COLUMNS: i32 = 5;
@@ -14,17 +14,16 @@ pub struct GridPlugin;
 impl Plugin for GridPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
-            Startup,
-            (
-                spawn_grid,
-                // flush commands
-                spawn_cells,
-            )
-                .chain(),
+            OnEnter(AppState::InGame),
+            spawn_grid.in_set(InGameSet::OnEnter),
         )
         .add_systems(
-            Startup,
-            apply_deferred.after(spawn_grid).before(spawn_cells),
+            OnEnter(AppState::InGame),
+            spawn_cells.in_set(InGameSet::PostOnEnter),
+        )
+        .add_systems(
+            OnExit(AppState::InGame),
+            despawn_grid.in_set(InGameSet::OnExit),
         );
     }
 }
@@ -68,4 +67,9 @@ fn spawn_cells(mut commands: Commands, query: Query<(Entity, &GridSize), With<Gr
             });
         });
     });
+}
+
+fn despawn_grid(mut commands: Commands, query: Query<Entity, With<Grid>>) {
+    let e = query.single();
+    commands.entity(e).despawn_recursive();
 }

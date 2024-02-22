@@ -4,7 +4,10 @@
 
 use bevy::prelude::*;
 
-use crate::action::{Action, CellActionEvent};
+use crate::{
+    action::{Action, CellActionEvent},
+    schedule::InGameSet,
+};
 
 const CELL_CLEARED_COLOR: Color = Color::rgb(0.8, 0.8, 0.8);
 const CELL_FILLED_COLOR: Color = Color::rgb(0.36, 0.58, 0.66);
@@ -17,8 +20,7 @@ pub struct CellPlugin;
 
 impl Plugin for CellPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(PostStartup, print_cell_location)
-            .add_systems(Update, handle_cell_action);
+        app.add_systems(Update, handle_cell_action.in_set(InGameSet::EntityUpdates));
     }
 }
 
@@ -63,7 +65,7 @@ impl CellState {
 
 impl CellBundle {
     pub fn new(column: i32, row: i32) -> CellBundle {
-        let cell: Cell = Default::default();
+        let cell: Cell = default();
         let color: Color = cell.state.color();
         CellBundle {
             location: Location { column, row },
@@ -72,13 +74,13 @@ impl CellBundle {
                 sprite: Sprite {
                     color,
                     custom_size: Some(Vec2::splat(CELL_SIZE)),
-                    ..Default::default()
+                    ..default()
                 },
                 transform: Transform::from_translation(Vec3::from((
                     Vec2::splat(CELL_SIZE + CELL_GUTTER) * Vec2::new(column as f32, row as f32),
                     0.0,
                 ))),
-                ..Default::default()
+                ..default()
             },
         }
     }
@@ -120,14 +122,4 @@ fn apply_action_to_cell(action: Action, cell: &mut Cell) {
 
 fn update_cell_sprite(cell: &Cell, sprite: &mut Sprite) {
     sprite.color = cell.state.color();
-}
-
-fn print_cell_location(query: Query<(&GlobalTransform, &Location), With<Cell>>) {
-    for (transform, location) in query.iter() {
-        let translation = transform.translation();
-        debug!(
-            "Cell({},{}) is located at ({},{})",
-            location.column, location.row, translation.x, translation.y
-        );
-    }
 }
