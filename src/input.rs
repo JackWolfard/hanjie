@@ -43,8 +43,8 @@ fn convert_camera_coords_to_world(
 }
 
 fn map_click_to_action(
-    buttons: Res<Input<MouseButton>>,
-    keys: Res<Input<KeyCode>>,
+    buttons: Res<ButtonInput<MouseButton>>,
+    keys: Res<ButtonInput<KeyCode>>,
 ) -> Option<Action> {
     let shift = keys.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight]);
     if buttons.just_pressed(MouseButton::Left) {
@@ -62,15 +62,18 @@ fn map_click_to_action(
     }
 }
 
-fn handle_game_key_press(mut next_state: ResMut<NextState<AppState>>, keys: Res<Input<KeyCode>>) {
+fn handle_game_key_press(
+    mut next_state: ResMut<NextState<AppState>>,
+    keys: Res<ButtonInput<KeyCode>>,
+) {
     if keys.just_pressed(KeyCode::Escape) {
         next_state.set(AppState::PuzzleSelect);
     }
 }
 
 fn handle_game_click(
-    buttons: Res<Input<MouseButton>>,
-    keys: Res<Input<KeyCode>>,
+    buttons: Res<ButtonInput<MouseButton>>,
+    keys: Res<ButtonInput<KeyCode>>,
     camera_q: Query<(&Camera, &GlobalTransform), With<MainCamera>>,
     window_q: Query<&Window>,
     primary_window_q: Query<&Window, With<PrimaryWindow>>,
@@ -91,7 +94,7 @@ fn handle_game_click(
                 "handle_click: {action:?} click at ({},{})",
                 position.x, position.y
             );
-            ev_worldaction.send(GameActionEvent { position, action })
+            ev_worldaction.send(GameActionEvent { position, action });
         }
     }
 }

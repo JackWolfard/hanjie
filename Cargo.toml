@@ -7,7 +7,7 @@ name = "hanjie"
 version = "0.1.2"
 authors = ["Jack Wolfard"]
 edition = "2021"
-rust-version = "1.75"
+rust-version = "1.76"
 description = "A nonogram game engine using Bevy"
 documentation = "https://docs.rs/bevy"
 readme = "README.md"
@@ -17,8 +17,8 @@ keywords = ["nonogram", "picross", "griddlers", "puzzle"]
 categories = ["game-development"]
 
 [dependencies]
-bevy = "0.12"
-bevy-inspector-egui = { version = "0.22", optional = true }
+bevy = "0.13"
+bevy-inspector-egui = { version = "0.23", optional = true }
 
 [features]
 debug = []

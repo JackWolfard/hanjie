@@ -8,7 +8,7 @@ pub struct AppPlugin;
 
 impl Plugin for AppPlugin {
     fn build(&self, app: &mut App) {
-        app.add_state::<AppState>();
+        app.init_state::<AppState>();
     }
 }
 

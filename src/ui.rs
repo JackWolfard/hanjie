@@ -60,7 +60,7 @@ fn spawn_puzzle_select_screen(mut commands: Commands) {
             ..default()
         },
     )
-    .with_text_alignment(TextAlignment::Center);
+    .with_text_justify(JustifyText::Center);
 
     let content = NodeBundle {
         style: Style {

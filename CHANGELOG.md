@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Comply with [REUSE standard](https://reuse.software/).
+- Update Bevy to 0.13
 
 ## [0.1.2] - 2023-12-30
 
