@@ -23,6 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comply with [REUSE standard](https://reuse.software/).
 - Update Bevy to 0.13
 
+### Fixed
+
+- Change documentation link in Cargo manifest to point to Hanjie instead of Bevy
+
 ## [0.1.2] - 2023-12-30
 
 ### Fixed
