@@ -18,13 +18,7 @@ impl Plugin for SchedulePlugin {
             .configure_sets(OnExit(AppState::PuzzleSelect), PuzzleSelectSet::OnExit)
             .configure_sets(
                 OnEnter(AppState::InGame),
-                (InGameSet::OnEnter, /* flush */ InGameSet::PostOnEnter).chain(),
-            )
-            .add_systems(
-                OnEnter(AppState::InGame),
-                apply_deferred
-                    .after(InGameSet::OnEnter)
-                    .before(InGameSet::PostOnEnter),
+                (InGameSet::OnEnter, InGameSet::PostOnEnter).chain(),
             )
             .configure_sets(
                 Update,

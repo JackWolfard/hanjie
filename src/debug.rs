@@ -24,9 +24,7 @@ impl Plugin for DebugPlugin {
         .add_systems(Update, hello_world)
         .add_systems(
             OnEnter(AppState::InGame),
-            (apply_deferred, print_cell_location)
-                .chain()
-                .after(InGameSet::PostOnEnter),
+            print_cell_location.after(InGameSet::PostOnEnter),
         );
     }
 }

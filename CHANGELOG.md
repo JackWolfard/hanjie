@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Comply with [REUSE standard](https://reuse.software/).
 - Update Bevy to 0.13
+- Migrate to Bevy's automatic insertion of `apply_deferred` ([0.13 update blog](https://bevyengine.org/news/bevy-0-13/#automatically-insert-apply-deferred-systems))
 
 ### Fixed
 
