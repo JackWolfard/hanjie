@@ -10,27 +10,34 @@ pub struct SchedulePlugin;
 
 impl Plugin for SchedulePlugin {
     fn build(&self, app: &mut App) {
-        app.configure_sets(OnEnter(AppState::PuzzleSelect), PuzzleSelectSet::OnEnter)
+        app.configure_sets(OnEnter(AppState::SelectPuzzle), PuzzleSelectSet::OnEnter)
             .configure_sets(
                 Update,
-                PuzzleSelectSet::UserInput.run_if(in_state(AppState::PuzzleSelect)),
+                (PuzzleSelectSet::UserInput, PuzzleSelectSet::Events)
+                    .chain()
+                    .run_if(in_state(AppState::SelectPuzzle)),
             )
-            .configure_sets(OnExit(AppState::PuzzleSelect), PuzzleSelectSet::OnExit)
+            .configure_sets(OnExit(AppState::SelectPuzzle), PuzzleSelectSet::OnExit)
+            .configure_sets(OnEnter(AppState::LoadPuzzle), PuzzleLoadSet::OnEnter)
             .configure_sets(
-                OnEnter(AppState::InGame),
-                (InGameSet::OnEnter, InGameSet::PostOnEnter).chain(),
+                Update,
+                PuzzleLoadSet::Events.run_if(in_state(AppState::LoadPuzzle)),
+            )
+            .configure_sets(
+                OnEnter(AppState::SolvePuzzle),
+                (PuzzleSolveSet::OnEnter, PuzzleSolveSet::PostOnEnter).chain(),
             )
             .configure_sets(
                 Update,
                 (
-                    InGameSet::UserInput,
-                    InGameSet::Events,
-                    InGameSet::EntityUpdates,
+                    PuzzleSolveSet::UserInput,
+                    PuzzleSolveSet::Events,
+                    PuzzleSolveSet::EntityUpdates,
                 )
                     .chain()
-                    .run_if(in_state(AppState::InGame)),
+                    .run_if(in_state(AppState::SolvePuzzle)),
             )
-            .configure_sets(OnExit(AppState::InGame), InGameSet::OnExit);
+            .configure_sets(OnExit(AppState::SolvePuzzle), PuzzleSolveSet::OnExit);
     }
 }
 
@@ -38,11 +45,18 @@ impl Plugin for SchedulePlugin {
 pub enum PuzzleSelectSet {
     OnEnter,
     UserInput,
+    Events,
     OnExit,
 }
 
 #[derive(SystemSet, Clone, Copy, Debug, Hash, Eq, PartialEq)]
-pub enum InGameSet {
+pub enum PuzzleLoadSet {
+    OnEnter,
+    Events,
+}
+
+#[derive(SystemSet, Clone, Copy, Debug, Hash, Eq, PartialEq)]
+pub enum PuzzleSolveSet {
     OnEnter,
     PostOnEnter,
     UserInput,

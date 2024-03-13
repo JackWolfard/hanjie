@@ -2,20 +2,17 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::feature::FeaturePlugin;
 use bevy::prelude::*;
-use bevy_inspector_egui::quick::WorldInspectorPlugin;
 
 pub struct InspectPlugin;
 
-impl FeaturePlugin for InspectPlugin {
-    fn load(app: &mut App) {
-        app.add_plugins(InspectPlugin);
-    }
-}
-
 impl Plugin for InspectPlugin {
+    #[allow(unused_variables)]
     fn build(&self, app: &mut App) {
-        app.add_plugins(WorldInspectorPlugin::new());
+        #[cfg(feature = "inspect")]
+        {
+            use bevy_inspector_egui::quick::WorldInspectorPlugin;
+            app.add_plugins(WorldInspectorPlugin::new());
+        }
     }
 }

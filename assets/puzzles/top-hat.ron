@@ -1,0 +1,79 @@
+Puzzle(
+  name: "top hat",
+  grid: GridSize(
+    columns: 5,
+    rows: 5,
+  ),
+  constraints: [
+    Line(
+      Row(0),
+      [
+        Number(3)
+      ],
+    ),
+    Line(
+      Row(1),
+      [
+        Number(3)
+      ],
+    ),
+    Line(
+      Row(2),
+      [
+        Number(3)
+      ],
+    ),
+    Line(
+      Row(3),
+      [
+        Number(5)
+      ],
+    ),
+    Line(
+      Row(4),
+      [
+        Number(5)
+      ],
+    ),
+    Line(
+      Column(0),
+      [
+        Number(2)
+      ],
+    ),
+    Line(
+      Column(1),
+      [
+        Number(5)
+      ],
+    ),
+    Line(
+      Column(2),
+      [
+        Number(5)
+      ],
+    ),
+    Line(
+      Column(3),
+      [
+        Number(5)
+      ],
+    ),
+    Line(
+      Column(4),
+      [
+        Number(2)
+      ],
+    ),
+  ]
+)
+
+/*
+    2  5  5  5  2
+  +--------------
+3 | _  o  o  o  _
+3 | _  o  o  o  _
+3 | _  o  o  o  _
+5 | o  o  o  o  o
+5 | o  o  o  o  o
+*/

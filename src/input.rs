@@ -9,10 +9,10 @@ use bevy::{
 };
 
 use crate::{
-    action::{Action, GameActionEvent},
+    action::{PuzzleSolveAction, PuzzleSolveEvent, PuzzleSolveState},
     app::AppState,
     camera::MainCamera,
-    schedule::{InGameSet, PuzzleSelectSet},
+    schedule::{PuzzleSelectSet, PuzzleSolveSet},
 };
 
 pub struct InputPlugin;
@@ -21,9 +21,9 @@ impl Plugin for InputPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            (handle_game_key_press, handle_game_click)
+            (handle_puzzle_solve_key_press, handle_puzzle_solve_click)
                 .chain()
-                .in_set(InGameSet::UserInput),
+                .in_set(PuzzleSolveSet::UserInput),
         )
         .add_systems(
             Update,
@@ -42,44 +42,44 @@ fn convert_camera_coords_to_world(
         .and_then(|cursor| camera.viewport_to_world_2d(camera_transform, cursor))
 }
 
-fn map_click_to_action(
+fn map_click_to_in_game_action(
     buttons: Res<ButtonInput<MouseButton>>,
     keys: Res<ButtonInput<KeyCode>>,
-) -> Option<Action> {
+) -> Option<PuzzleSolveAction> {
     let shift = keys.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight]);
     if buttons.just_pressed(MouseButton::Left) {
         if shift {
-            Some(Action::Mark)
+            Some(PuzzleSolveAction::Mark)
         } else {
-            Some(Action::Toggle)
+            Some(PuzzleSolveAction::Toggle)
         }
     } else if buttons.just_pressed(MouseButton::Middle) {
-        Some(Action::Mark)
+        Some(PuzzleSolveAction::Mark)
     } else if buttons.just_pressed(MouseButton::Right) {
-        Some(Action::CrossOut)
+        Some(PuzzleSolveAction::CrossOut)
     } else {
         None
     }
 }
 
-fn handle_game_key_press(
+fn handle_puzzle_solve_key_press(
     mut next_state: ResMut<NextState<AppState>>,
     keys: Res<ButtonInput<KeyCode>>,
 ) {
     if keys.just_pressed(KeyCode::Escape) {
-        next_state.set(AppState::PuzzleSelect);
+        next_state.set(AppState::SelectPuzzle);
     }
 }
 
-fn handle_game_click(
+fn handle_puzzle_solve_click(
     buttons: Res<ButtonInput<MouseButton>>,
     keys: Res<ButtonInput<KeyCode>>,
     camera_q: Query<(&Camera, &GlobalTransform), With<MainCamera>>,
     window_q: Query<&Window>,
     primary_window_q: Query<&Window, With<PrimaryWindow>>,
-    mut ev_worldaction: EventWriter<GameActionEvent>,
+    mut ev_worldaction: EventWriter<PuzzleSolveEvent>,
 ) {
-    if let Some(action) = map_click_to_action(buttons, keys) {
+    if let Some(action) = map_click_to_in_game_action(buttons, keys) {
         let (camera, camera_transform) = camera_q.single();
         let primary_window = primary_window_q.single();
         let window = match camera.target {
@@ -90,11 +90,10 @@ fn handle_game_click(
             _ => primary_window,
         };
         if let Some(position) = convert_camera_coords_to_world(camera, camera_transform, window) {
-            debug!(
-                "handle_click: {action:?} click at ({},{})",
-                position.x, position.y
-            );
-            ev_worldaction.send(GameActionEvent { position, action });
+            ev_worldaction.send(PuzzleSolveEvent {
+                action,
+                state: PuzzleSolveState::WorldPosition(position),
+            });
         }
     }
 }

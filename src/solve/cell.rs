@@ -5,29 +5,27 @@
 use bevy::prelude::*;
 
 use crate::{
-    action::{Action, CellActionEvent},
-    schedule::InGameSet,
+    action::{CellEvent, PuzzleSolveAction, PuzzleSolveState},
+    puzzle::{Location, LocationPosition},
+    schedule::PuzzleSolveSet,
 };
 
 const CELL_CLEARED_COLOR: Color = Color::rgb(0.8, 0.8, 0.8);
 const CELL_FILLED_COLOR: Color = Color::rgb(0.36, 0.58, 0.66);
 const CELL_CROSSEDOUT_COLOR: Color = Color::rgb(0.66, 0.36, 0.36);
 const CELL_MARKED_COLOR: Color = Color::rgb(0.54, 0.66, 0.36);
-const CELL_SIZE: f32 = 50.0;
-const CELL_GUTTER: f32 = 10.0;
+pub const CELL_SIZE: f32 = 50.0;
+pub const CELL_GUTTER: f32 = 10.0;
 
 pub struct CellPlugin;
 
 impl Plugin for CellPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, handle_cell_action.in_set(InGameSet::EntityUpdates));
+        app.add_systems(
+            Update,
+            handle_cell_action.in_set(PuzzleSolveSet::EntityUpdates),
+        );
     }
-}
-
-#[derive(Component)]
-pub struct Location {
-    pub column: i32,
-    pub row: i32,
 }
 
 #[derive(Bundle)]
@@ -68,7 +66,7 @@ impl CellBundle {
         let cell: Cell = default();
         let color: Color = cell.state.color();
         CellBundle {
-            location: Location { column, row },
+            location: Location::Position(LocationPosition { column, row }),
             cell,
             sprite_bundle: SpriteBundle {
                 sprite: Sprite {
@@ -98,25 +96,27 @@ pub fn is_inside_cell(cell_position: Vec3, position: Vec2) -> bool {
 }
 
 fn handle_cell_action(
-    mut ev_cellaction: EventReader<CellActionEvent>,
+    mut events: EventReader<CellEvent>,
     mut query: Query<(&mut Cell, &mut Sprite)>,
 ) {
-    for ev in ev_cellaction.read() {
-        if let Ok((mut cell, mut sprite)) = query.get_mut(ev.entity) {
-            apply_action_to_cell(ev.action, &mut cell);
-            update_cell_sprite(&cell, &mut sprite);
+    for CellEvent { action, state } in events.read() {
+        if let PuzzleSolveState::Entity(entity) = state {
+            if let Ok((mut cell, mut sprite)) = query.get_mut(*entity) {
+                apply_action_to_cell(action, &mut cell);
+                update_cell_sprite(&cell, &mut sprite);
+            }
         }
     }
 }
 
-fn apply_action_to_cell(action: Action, cell: &mut Cell) {
+fn apply_action_to_cell(action: &PuzzleSolveAction, cell: &mut Cell) {
     cell.state = match action {
-        Action::Toggle => match cell.state {
+        PuzzleSolveAction::Toggle => match cell.state {
             CellState::Filled => CellState::Cleared,
             _ => CellState::Filled,
         },
-        Action::Mark => CellState::Marked,
-        Action::CrossOut => CellState::CrossedOut,
+        PuzzleSolveAction::Mark => CellState::Marked,
+        PuzzleSolveAction::CrossOut => CellState::CrossedOut,
     }
 }
 

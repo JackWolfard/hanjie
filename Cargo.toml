@@ -18,9 +18,12 @@ categories = ["game-development"]
 
 [dependencies]
 bevy = "0.13"
+bevy_common_assets = { version = "0.10", features = ["ron"] }
 bevy-inspector-egui = { version = "0.23", optional = true }
+serde = { version = "1.0", features = ["derive"] }
 
 [features]
+default = []
 debug = []
 inspect = ["dep:bevy-inspector-egui"]
 
