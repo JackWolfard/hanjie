@@ -6,6 +6,11 @@ use bevy::prelude::*;
 
 use crate::{
     app::AppState,
+    camera::MainCamera,
+    layout::{
+        bounding_box::BoundingBox,
+        size::{self, Resizable},
+    },
     puzzle::{ActivePuzzle, Puzzle},
     schedule::PuzzleSolveSet,
     solve::{cell::CellPlugin, grid::GridPlugin},
@@ -35,31 +40,49 @@ impl Plugin for SolvePlugin {
 struct SolvePuzzleRoot;
 
 #[derive(Bundle)]
-pub struct SolvePuzzleBundle {
+struct SolvePuzzleBundle {
     #[bundle()]
-    sprite_bundle: SpriteBundle,
+    spatial_bundle: SpatialBundle,
+    bounding_box: BoundingBox,
+    resizable: Resizable,
 }
 
 impl SolvePuzzleBundle {
-    pub fn new() -> SolvePuzzleBundle {
-        SolvePuzzleBundle {
-            sprite_bundle: SpriteBundle {
-                sprite: Sprite {
-                    color: Color::CYAN,
-                    custom_size: Some(Vec2::splat(100.0)),
-                    ..default()
-                },
-                ..default()
-            },
+    fn new(width: f32, height: f32) -> Self {
+        Self {
+            spatial_bundle: SpatialBundle::default(),
+            bounding_box: BoundingBox::new(width, height, Color::CYAN),
+            resizable: Resizable::new(
+                size::Reference::Window,
+                size::Constraint::Pct(0.6),
+                size::Constraint::Pct(1.0),
+                None,
+            ),
         }
     }
 }
 
-fn spawn(mut commands: Commands, active_puzzle: Res<ActivePuzzle>, puzzles: Res<Assets<Puzzle>>) {
+impl Default for SolvePuzzleBundle {
+    fn default() -> Self {
+        Self::new(0.0, 0.0)
+    }
+}
+
+fn spawn(
+    mut commands: Commands,
+    camera_q: Query<&Camera, With<MainCamera>>,
+    active_puzzle: Res<ActivePuzzle>,
+    puzzles: Res<Assets<Puzzle>>,
+) {
     let handle = active_puzzle.handle.as_ref().unwrap();
     let puzzle = puzzles.get(handle).unwrap();
+    let camera = camera_q.single();
+    let view = camera.logical_viewport_size().unwrap();
+    let mut bundle = SolvePuzzleBundle::default();
+    let size = bundle.resizable.constraints.apply(view);
+    bundle.bounding_box.resize(size);
     commands
-        .spawn((SolvePuzzleBundle::new(), SolvePuzzleRoot))
+        .spawn((bundle, SolvePuzzleRoot))
         .with_children(|parent| grid::spawn(parent, puzzle));
 }
 

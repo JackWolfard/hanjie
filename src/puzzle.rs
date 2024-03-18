@@ -71,10 +71,16 @@ pub struct Puzzle {
     pub constraints: Box<[Constraint]>,
 }
 
-#[derive(Component, Deserialize, Serialize, Debug)]
+#[derive(Component, Deserialize, Serialize, Debug, Copy, Clone)]
 pub struct GridSize {
     pub columns: i32,
     pub rows: i32,
+}
+
+impl From<GridSize> for Vec2 {
+    fn from(grid: GridSize) -> Self {
+        Vec2::new(grid.columns as f32, grid.rows as f32)
+    }
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -89,10 +95,16 @@ pub enum Location {
     Position(LocationPosition),
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Copy, Clone)]
 pub struct LocationPosition {
     pub column: i32,
     pub row: i32,
+}
+
+impl From<LocationPosition> for Vec2 {
+    fn from(location: LocationPosition) -> Self {
+        Vec2::new(location.column as f32, location.row as f32)
+    }
 }
 
 #[derive(Deserialize, Serialize, Debug)]

@@ -2,11 +2,16 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use bevy::prelude::*;
+use bevy::{math::AspectRatio, prelude::*};
 
 use crate::{
     action::{CellEvent, PuzzleSolveAction, PuzzleSolveState},
-    puzzle::{Location, LocationPosition},
+    layout::{
+        bounding_box::BoundingBox,
+        position::{self, Alignable},
+        size::{self, Resizable},
+    },
+    puzzle::{GridSize, Location, LocationPosition},
     schedule::PuzzleSolveSet,
 };
 
@@ -30,10 +35,13 @@ impl Plugin for CellPlugin {
 
 #[derive(Bundle)]
 pub struct CellBundle {
-    location: Location,
-    cell: Cell,
     #[bundle()]
     sprite_bundle: SpriteBundle,
+    bounding_box: BoundingBox,
+    alignable: Alignable,
+    resizable: Resizable,
+    location: Location,
+    cell: Cell,
 }
 
 #[derive(Component, Default)]
@@ -62,24 +70,44 @@ impl CellState {
 }
 
 impl CellBundle {
-    pub fn new(column: i32, row: i32) -> CellBundle {
+    pub fn new(row: i32, column: i32, size: &GridSize) -> CellBundle {
         let cell: Cell = default();
         let color: Color = cell.state.color();
         CellBundle {
-            location: Location::Position(LocationPosition { column, row }),
-            cell,
             sprite_bundle: SpriteBundle {
                 sprite: Sprite {
                     color,
                     custom_size: Some(Vec2::splat(CELL_SIZE)),
                     ..default()
                 },
+                visibility: Visibility::Visible,
                 transform: Transform::from_translation(Vec3::from((
-                    Vec2::splat(CELL_SIZE + CELL_GUTTER) * Vec2::new(column as f32, row as f32),
+                    Vec2::splat(CELL_SIZE + CELL_GUTTER)
+                        * Vec2::new(
+                            (column - size.columns / 2) as f32,
+                            (row - size.rows / 2) as f32,
+                        ),
                     0.0,
                 ))),
                 ..default()
             },
+            bounding_box: BoundingBox::new(CELL_SIZE, CELL_SIZE, Color::PINK),
+            alignable: Alignable::new(
+                position::Reference::Parent,
+                position::Alignment::Grid(
+                    *size,
+                    LocationPosition { column, row },
+                    Some(position::Spacing::Even),
+                ),
+            ),
+            resizable: Resizable::new(
+                size::Reference::Parent,
+                size::Constraint::Pct(1.0 / (size.columns + 1) as f32),
+                size::Constraint::Pct(1.0 / (size.rows + 1) as f32),
+                Some(AspectRatio::new(1.0, 1.0)),
+            ),
+            location: Location::Position(LocationPosition { column, row }),
+            cell,
         }
     }
 }

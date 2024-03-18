@@ -10,6 +10,7 @@ use crate::{
     camera::CameraPlugin,
     feature::FeaturePlugins,
     input::InputPlugin,
+    layout::LayoutPlugins,
     puzzle::PuzzlePlugin,
     schedule::SchedulePlugin,
     solve::SolvePlugin,
@@ -23,6 +24,7 @@ mod debug;
 mod feature;
 mod input;
 mod inspect;
+mod layout;
 mod puzzle;
 mod schedule;
 mod solve;
@@ -47,6 +49,7 @@ fn main() {
         .add_plugins(CameraPlugin)
         .add_plugins(FeaturePlugins)
         .add_plugins(InputPlugin)
+        .add_plugins(LayoutPlugins)
         .add_plugins(PuzzlePlugin)
         .add_plugins(SchedulePlugin)
         .add_plugins(SolvePlugin)
