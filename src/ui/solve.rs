@@ -4,12 +4,7 @@
 
 use bevy::prelude::*;
 
-use crate::{
-    app::AppState,
-    // puzzle::{ActivePuzzle, Puzzle},
-    schedule::PuzzleSolveSet,
-    ui::despawn_screen,
-};
+use crate::{app::AppState, schedule::SolveSet, ui::despawn_screen};
 
 const PUZZLE_WIDTH_PCT: f32 = 60.0;
 const PUZZLE_WIDTH: Val = Val::Vw(PUZZLE_WIDTH_PCT);
@@ -25,18 +20,18 @@ pub struct SolveUiPlugin;
 impl Plugin for SolveUiPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
-            OnEnter(AppState::SolvePuzzle),
-            spawn_solve_puzzle_screen.in_set(PuzzleSolveSet::OnEnter),
+            OnEnter(AppState::Solve),
+            spawn_solve_puzzle_screen.in_set(SolveSet::OnEnter),
         )
         .add_systems(
-            OnExit(AppState::SolvePuzzle),
-            despawn_screen::<SolvePuzzleScreen>.in_set(PuzzleSolveSet::OnExit),
+            OnExit(AppState::Solve),
+            despawn_screen::<SolveScreen>.in_set(SolveSet::OnExit),
         );
     }
 }
 
 #[derive(Component)]
-struct SolvePuzzleScreen;
+struct SolveScreen;
 
 fn spawn_solve_puzzle_screen(
     mut commands: Commands,
@@ -98,7 +93,7 @@ fn spawn_solve_puzzle_screen(
         ..default()
     };
 
-    let screen = commands.spawn((screen, SolvePuzzleScreen)).id();
+    let screen = commands.spawn((screen, SolveScreen)).id();
     let title = commands.spawn(title).id();
     let content = commands.spawn(content).id();
     let debug_grid = commands.spawn(debug_grid).id();

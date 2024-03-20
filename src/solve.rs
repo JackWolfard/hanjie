@@ -11,12 +11,13 @@ use crate::{
         bounding_box::BoundingBox,
         size::{self, Resizable},
     },
-    puzzle::{ActivePuzzle, Puzzle},
-    schedule::PuzzleSolveSet,
-    solve::{cell::CellPlugin, grid::GridPlugin},
+    puzzle::ActivePuzzle,
+    schedule::SolveSet,
+    solve::{cell::CellPlugin, constraint::ConstraintPlugin, grid::GridPlugin},
 };
 
 pub mod cell;
+pub mod constraint;
 pub mod grid;
 
 pub struct SolvePlugin;
@@ -24,15 +25,10 @@ pub struct SolvePlugin;
 impl Plugin for SolvePlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(CellPlugin)
+            .add_plugins(ConstraintPlugin)
             .add_plugins(GridPlugin)
-            .add_systems(
-                OnEnter(AppState::SolvePuzzle),
-                spawn.in_set(PuzzleSolveSet::OnEnter),
-            )
-            .add_systems(
-                OnExit(AppState::SolvePuzzle),
-                despawn.in_set(PuzzleSolveSet::OnExit),
-            );
+            .add_systems(OnEnter(AppState::Solve), spawn.in_set(SolveSet::OnEnter))
+            .add_systems(OnExit(AppState::Solve), despawn.in_set(SolveSet::OnExit));
     }
 }
 
@@ -48,23 +44,22 @@ struct SolvePuzzleBundle {
 }
 
 impl SolvePuzzleBundle {
-    fn new(width: f32, height: f32) -> Self {
+    fn new() -> Self {
         Self {
             spatial_bundle: SpatialBundle::default(),
-            bounding_box: BoundingBox::new(width, height, Color::CYAN),
+            bounding_box: BoundingBox::init(Color::CYAN),
             resizable: Resizable::new(
-                size::Reference::Window,
-                size::Constraint::Pct(0.6),
-                size::Constraint::Pct(1.0),
+                size::ResizableField {
+                    constraint: size::Constraint::Pct(0.6),
+                    reference: size::Reference::Window,
+                },
+                size::ResizableField {
+                    constraint: size::Constraint::Fill,
+                    reference: size::Reference::Window,
+                },
                 None,
             ),
         }
-    }
-}
-
-impl Default for SolvePuzzleBundle {
-    fn default() -> Self {
-        Self::new(0.0, 0.0)
     }
 }
 
@@ -72,18 +67,16 @@ fn spawn(
     mut commands: Commands,
     camera_q: Query<&Camera, With<MainCamera>>,
     active_puzzle: Res<ActivePuzzle>,
-    puzzles: Res<Assets<Puzzle>>,
+    mut layout_ev: EventWriter<size::WindowResized>,
 ) {
-    let handle = active_puzzle.handle.as_ref().unwrap();
-    let puzzle = puzzles.get(handle).unwrap();
+    let puzzle = active_puzzle.puzzle.as_ref().unwrap();
     let camera = camera_q.single();
     let view = camera.logical_viewport_size().unwrap();
-    let mut bundle = SolvePuzzleBundle::default();
-    let size = bundle.resizable.constraints.apply(view);
-    bundle.bounding_box.resize(size);
     commands
-        .spawn((bundle, SolvePuzzleRoot))
+        .spawn((SolvePuzzleBundle::new(), SolvePuzzleRoot))
         .with_children(|parent| grid::spawn(parent, puzzle));
+    // trick to initialize size w/o explicit sizes
+    layout_ev.send(size::WindowResized { size: view });
 }
 
 fn despawn(mut commands: Commands, query: Query<Entity, With<SolvePuzzleRoot>>) {

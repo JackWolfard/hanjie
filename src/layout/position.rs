@@ -6,7 +6,7 @@ use bevy::prelude::*;
 
 use crate::{
     layout::{bounding_box::BoundingBox, schedule::LayoutSet, size::EntityResized},
-    puzzle::{GridSize, LocationPosition},
+    puzzle::{GridSize, Line, Position},
 };
 
 pub struct PositionPlugin;
@@ -45,7 +45,8 @@ pub enum Reference {
 
 pub enum Alignment {
     Standard(VerticalAlign, HorizontalAlign),
-    Grid(GridSize, LocationPosition, Option<Spacing>),
+    Grid(GridSize, Position, Option<Spacing>),
+    Line(GridSize, Line),
 }
 
 impl Alignment {
@@ -57,9 +58,9 @@ impl Alignment {
                 let y = Align::from(*vertical).apply(reference_center.y, reference_size.y, size.y);
                 Vec2::new(x, y)
             }
-            Alignment::Grid(grid, location, spacing) => {
+            Alignment::Grid(grid, position, spacing) => {
                 let grid = Vec2::from(*grid);
-                let location = Vec2::from(*location);
+                let position = Vec2::from(*position);
 
                 let mut cell_spacing = reference_size / grid;
 
@@ -71,7 +72,27 @@ impl Alignment {
                 let start_offset = (grid / 2.0).floor() - offset_if_even;
                 let start = cell_spacing * -start_offset;
 
-                start + cell_spacing * location
+                start + cell_spacing * position
+            }
+            Alignment::Line(grid, line) => {
+                let line_alignment = |reference_size: f32, lines: f32, line: f32| -> f32 {
+                    let spacing = reference_size / lines;
+                    let offset_if_even = ((lines + 1.0) % 2.0).floor() * 0.5;
+                    let start_offset = (lines / 2.0).floor() - offset_if_even;
+                    let start = spacing * -start_offset;
+                    start + spacing * line
+                };
+                let offset = (reference_size + size) / 2.0;
+                match line {
+                    Line::Column(column) => Vec2::new(
+                        line_alignment(reference_size.x, grid.columns as f32, *column as f32),
+                        offset.y,
+                    ),
+                    Line::Row(row) => Vec2::new(
+                        -offset.x,
+                        line_alignment(reference_size.y, grid.rows as f32, *row as f32),
+                    ),
+                }
             }
         }
     }

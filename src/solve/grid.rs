@@ -11,7 +11,7 @@ use crate::{
         size::{self, Resizable},
     },
     puzzle::{GridSize, Puzzle},
-    solve::cell::{CellBundle, CELL_GUTTER, CELL_SIZE},
+    solve::{cell::CellBundle, constraint},
 };
 
 pub struct GridPlugin;
@@ -39,10 +39,9 @@ impl GridBundle {
             columns: puzzle.grid.columns,
             rows: puzzle.grid.rows,
         };
-        let size = size(&grid_size);
         GridBundle {
             spatial_bundle: SpatialBundle::default(),
-            bounding_box: BoundingBox::new(size.x, size.y, Color::LIME_GREEN),
+            bounding_box: BoundingBox::init(Color::LIME_GREEN),
             alignable: Alignable::new(
                 position::Reference::Parent,
                 position::Alignment::Standard(
@@ -51,9 +50,14 @@ impl GridBundle {
                 ),
             ),
             resizable: Resizable::new(
-                size::Reference::Parent,
-                size::Constraint::Pct(0.6),
-                size::Constraint::Pct(0.6),
+                size::ResizableField {
+                    constraint: size::Constraint::Pct(0.6),
+                    reference: size::Reference::Parent,
+                },
+                size::ResizableField {
+                    constraint: size::Constraint::Pct(0.6),
+                    reference: size::Reference::Parent,
+                },
                 Some(AspectRatio::new(
                     grid_size.columns as f32,
                     grid_size.rows as f32,
@@ -62,14 +66,6 @@ impl GridBundle {
             size: grid_size,
         }
     }
-}
-
-fn size(grid: &GridSize) -> Vec2 {
-    let width = grid.columns as f32;
-    let width = width * CELL_SIZE + (width - 1.0) * CELL_GUTTER;
-    let height = grid.rows as f32;
-    let height = height * CELL_SIZE + (height - 1.0) * CELL_GUTTER;
-    Vec2::new(width, height)
 }
 
 pub fn spawn(builder: &mut ChildBuilder, puzzle: &Puzzle) {
@@ -81,5 +77,8 @@ pub fn spawn(builder: &mut ChildBuilder, puzzle: &Puzzle) {
                     parent.spawn(CellBundle::new(row, column, &puzzle.grid));
                 });
             });
+            for constraint in puzzle.constraints.iter() {
+                constraint::spawn(parent, constraint.clone(), &puzzle.grid);
+            }
         });
 }

@@ -2,12 +2,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use bevy::prelude::*;
+use bevy::{asset::LoadedFolder, prelude::*};
 
 use crate::{
     app::AppState,
-    schedule::{PuzzleSelectSet, PuzzleSolveSet},
-    solve::cell::{is_inside_cell, Cell},
+    puzzle::{ActivePuzzle, Puzzle, PuzzlesFolder},
+    schedule::{SelectSet, SolveSet},
+    solve::cell::{is_inside_cell, Cell, CellSize},
 };
 
 pub struct ActionPlugin;
@@ -17,8 +18,8 @@ impl Plugin for ActionPlugin {
         app.add_event::<PuzzleSelectEvent>()
             .add_event::<PuzzleSolveEvent>()
             .add_event::<CellEvent>()
-            .add_systems(Update, handle_puzzle_select.in_set(PuzzleSelectSet::Events))
-            .add_systems(Update, handle_puzzle_solve.in_set(PuzzleSolveSet::Events));
+            .add_systems(Update, handle_puzzle_select.in_set(SelectSet::Events))
+            .add_systems(Update, handle_puzzle_solve.in_set(SolveSet::Events));
     }
 }
 
@@ -35,7 +36,7 @@ pub enum PuzzleSelectAction {
 
 #[derive(Debug, Clone, Copy)]
 pub enum PuzzleSelectState {
-    Puzzle(i32),
+    Puzzle(usize),
 }
 
 #[derive(Event, Debug)]
@@ -65,14 +66,27 @@ pub struct CellEvent {
 
 fn handle_puzzle_select(
     mut events: EventReader<PuzzleSelectEvent>,
+    puzzles: Res<Assets<Puzzle>>,
+    puzzles_folder: Res<PuzzlesFolder>,
+    loaded_folders: Res<Assets<LoadedFolder>>,
+    mut active_puzzle: ResMut<ActivePuzzle>,
     mut next_state: ResMut<NextState<AppState>>,
 ) {
-    for event in events.read() {
-        match event {
-            PuzzleSelectEvent {
-                action: PuzzleSelectAction::Select,
-                state: PuzzleSelectState::Puzzle(_),
-            } => next_state.set(AppState::LoadPuzzle),
+    let folder: Option<&LoadedFolder> = loaded_folders.get(&puzzles_folder.folder);
+    if let Some(folder) = folder {
+        for event in events.read() {
+            match event {
+                PuzzleSelectEvent {
+                    action: PuzzleSelectAction::Select,
+                    state: PuzzleSelectState::Puzzle(index),
+                } => {
+                    let handle = folder.handles.get(*index).unwrap().clone();
+                    if let Ok(id) = handle.id().try_typed::<Puzzle>() {
+                        active_puzzle.puzzle = puzzles.get(id).cloned();
+                        next_state.set(AppState::Solve);
+                    }
+                }
+            }
         }
     }
 }
@@ -80,12 +94,13 @@ fn handle_puzzle_select(
 fn handle_puzzle_solve(
     mut puzzle_solve_events: EventReader<PuzzleSolveEvent>,
     query: Query<(Entity, &GlobalTransform), With<Cell>>,
+    cell_size: Res<CellSize>,
     mut cell_events: EventWriter<CellEvent>,
 ) {
     for PuzzleSolveEvent { action, state } in puzzle_solve_events.read() {
         if let PuzzleSolveState::WorldPosition(position) = state {
             for (entity, transform) in query.iter() {
-                if is_inside_cell(transform.translation(), *position) {
+                if is_inside_cell(&cell_size, transform.translation(), *position) {
                     cell_events.send(CellEvent {
                         action: *action,
                         state: PuzzleSolveState::Entity(entity),

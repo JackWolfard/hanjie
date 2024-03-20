@@ -10,39 +10,36 @@ pub struct SchedulePlugin;
 
 impl Plugin for SchedulePlugin {
     fn build(&self, app: &mut App) {
-        app.configure_sets(OnEnter(AppState::SelectPuzzle), PuzzleSelectSet::OnEnter)
+        app.configure_sets(OnEnter(AppState::Select), SelectSet::OnEnter)
             .configure_sets(
                 Update,
-                (PuzzleSelectSet::UserInput, PuzzleSelectSet::Events)
+                (SelectSet::UserInput, SelectSet::Events)
                     .chain()
-                    .run_if(in_state(AppState::SelectPuzzle)),
+                    .run_if(in_state(AppState::Select)),
             )
-            .configure_sets(OnExit(AppState::SelectPuzzle), PuzzleSelectSet::OnExit)
-            .configure_sets(OnEnter(AppState::LoadPuzzle), PuzzleLoadSet::OnEnter)
+            .configure_sets(OnExit(AppState::Select), SelectSet::OnExit)
+            .configure_sets(OnEnter(AppState::Load), LoadSet::OnEnter)
+            .configure_sets(Update, LoadSet::Events.run_if(in_state(AppState::Load)))
             .configure_sets(
-                Update,
-                PuzzleLoadSet::Events.run_if(in_state(AppState::LoadPuzzle)),
-            )
-            .configure_sets(
-                OnEnter(AppState::SolvePuzzle),
-                (PuzzleSolveSet::OnEnter, PuzzleSolveSet::PostOnEnter).chain(),
+                OnEnter(AppState::Solve),
+                (SolveSet::OnEnter, SolveSet::PostOnEnter).chain(),
             )
             .configure_sets(
                 Update,
                 (
-                    PuzzleSolveSet::UserInput,
-                    PuzzleSolveSet::Events,
-                    PuzzleSolveSet::EntityUpdates,
+                    SolveSet::UserInput,
+                    SolveSet::Events,
+                    SolveSet::EntityUpdates,
                 )
                     .chain()
-                    .run_if(in_state(AppState::SolvePuzzle)),
+                    .run_if(in_state(AppState::Solve)),
             )
-            .configure_sets(OnExit(AppState::SolvePuzzle), PuzzleSolveSet::OnExit);
+            .configure_sets(OnExit(AppState::Solve), SolveSet::OnExit);
     }
 }
 
 #[derive(SystemSet, Clone, Copy, Debug, Hash, Eq, PartialEq)]
-pub enum PuzzleSelectSet {
+pub enum SelectSet {
     OnEnter,
     UserInput,
     Events,
@@ -50,13 +47,13 @@ pub enum PuzzleSelectSet {
 }
 
 #[derive(SystemSet, Clone, Copy, Debug, Hash, Eq, PartialEq)]
-pub enum PuzzleLoadSet {
+pub enum LoadSet {
     OnEnter,
     Events,
 }
 
 #[derive(SystemSet, Clone, Copy, Debug, Hash, Eq, PartialEq)]
-pub enum PuzzleSolveSet {
+pub enum SolveSet {
     OnEnter,
     PostOnEnter,
     UserInput,

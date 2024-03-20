@@ -1,5 +1,5 @@
 Puzzle(
-  name: "top hat",
+  name: "Top Hat",
   grid: GridSize(
     columns: 5,
     rows: 5,

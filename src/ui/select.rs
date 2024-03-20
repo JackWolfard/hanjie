@@ -2,16 +2,16 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use bevy::prelude::*;
+use bevy::{asset::LoadedFolder, prelude::*};
 
 use crate::{
     action::{PuzzleSelectAction, PuzzleSelectEvent, PuzzleSelectState},
     app::AppState,
-    schedule::PuzzleSelectSet,
+    puzzle::{Puzzle, PuzzlesFolder},
+    schedule::SelectSet,
     ui::despawn_screen,
 };
 
-const PUZZLES: i32 = 15;
 const PUZZLE_WIDTH: Val = Val::Vw(80.0);
 const PUZZLE_HEIGHT: Val = Val::Vh(80.0);
 const PUZZLE_GAP: Val = Val::Px(20.0);
@@ -27,24 +27,35 @@ pub struct SelectUiPlugin;
 impl Plugin for SelectUiPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
-            OnEnter(AppState::SelectPuzzle),
-            spawn_puzzle_select_screen.in_set(PuzzleSelectSet::OnEnter),
+            OnEnter(AppState::Select),
+            spawn_puzzle_select_screen.in_set(SelectSet::OnEnter),
         )
         .add_systems(
             Update,
-            (handle_ui_input, outline_hovered_button_system).in_set(PuzzleSelectSet::UserInput),
+            (handle_ui_input, outline_hovered_button_system).in_set(SelectSet::UserInput),
         )
         .add_systems(
-            OnExit(AppState::SelectPuzzle),
-            despawn_screen::<SelectPuzzleScreen>.in_set(PuzzleSelectSet::OnExit),
+            OnExit(AppState::Select),
+            despawn_screen::<SelectScreen>.in_set(SelectSet::OnExit),
         );
     }
 }
 
 #[derive(Component)]
-struct SelectPuzzleScreen;
+struct SelectScreen;
 
-fn spawn_puzzle_select_screen(mut commands: Commands) {
+#[derive(Component)]
+struct SelectablePuzzle {
+    name: Box<str>,
+    index: usize,
+}
+
+fn spawn_puzzle_select_screen(
+    mut commands: Commands,
+    puzzles_folder: Res<PuzzlesFolder>,
+    loaded_folders: Res<Assets<LoadedFolder>>,
+    puzzles: Res<Assets<Puzzle>>,
+) {
     let screen = NodeBundle {
         style: Style {
             width: Val::Percent(100.0),
@@ -81,8 +92,25 @@ fn spawn_puzzle_select_screen(mut commands: Commands) {
         ..default()
     };
 
-    let puzzles: Vec<(ButtonBundle, TextBundle)> = (0..PUZZLES)
-        .map(|_| {
+    let folder: &LoadedFolder = loaded_folders.get(&puzzles_folder.folder).unwrap();
+
+    let selectable_puzzles: Vec<SelectablePuzzle> = folder
+        .handles
+        .iter()
+        .enumerate()
+        .filter_map(|(i, h)| {
+            h.id().try_typed::<Puzzle>().ok().and_then(|p| {
+                puzzles.get(p).map(|puzzle| SelectablePuzzle {
+                    name: puzzle.name.clone(),
+                    index: i,
+                })
+            })
+        })
+        .collect();
+
+    let puzzles: Vec<(ButtonBundle, TextBundle, SelectablePuzzle)> = selectable_puzzles
+        .into_iter()
+        .map(|puzzle| {
             (
                 ButtonBundle {
                     style: Style {
@@ -98,27 +126,29 @@ fn spawn_puzzle_select_screen(mut commands: Commands) {
                     ..default()
                 },
                 TextBundle::from_section(
-                    "Button",
+                    puzzle.name.clone(),
                     TextStyle {
                         font_size: 20.0,
                         color: Color::WHITE,
                         ..default()
                     },
                 ),
+                puzzle,
             )
         })
         .collect();
 
-    let screen = commands.spawn((screen, SelectPuzzleScreen)).id();
+    let screen = commands.spawn((screen, SelectScreen)).id();
     let title = commands.spawn(title).id();
     let content = commands.spawn(content).id();
     let puzzles: Vec<Entity> = puzzles
         .into_iter()
-        .map(|(puzzle, label)| {
-            let puzzle = commands.spawn(puzzle).id();
+        .map(|(button, label, puzzle)| {
+            let button = commands.spawn(button).id();
             let label = commands.spawn(label).id();
-            commands.entity(puzzle).push_children(&[label]);
-            puzzle
+            let puzzle = commands.spawn(puzzle).id();
+            commands.entity(button).push_children(&[label, puzzle]);
+            button
         })
         .collect();
 
@@ -129,20 +159,18 @@ fn spawn_puzzle_select_screen(mut commands: Commands) {
 #[allow(clippy::type_complexity)]
 fn handle_ui_input(
     interaction_query: Query<(&Interaction, &Children), (Changed<Interaction>, With<Button>)>,
-    mut text_query: Query<&mut Text>,
+    selectable_puzzle_q: Query<&SelectablePuzzle>,
     mut ev_puzzle_select: EventWriter<PuzzleSelectEvent>,
 ) {
     for (interaction, children) in &interaction_query {
-        if let Ok(mut text) = text_query.get_mut(children[0]) {
-            match interaction {
-                Interaction::Pressed => {
+        if matches!(interaction, Interaction::Pressed) {
+            for child in children {
+                if let Ok(SelectablePuzzle { index, .. }) = selectable_puzzle_q.get(*child) {
                     ev_puzzle_select.send(PuzzleSelectEvent {
                         action: PuzzleSelectAction::Select,
-                        state: PuzzleSelectState::Puzzle(0),
+                        state: PuzzleSelectState::Puzzle(*index),
                     });
                 }
-                Interaction::Hovered => text.sections[0].value = "Hover".to_string(),
-                Interaction::None => text.sections[0].value = "Button".to_string(),
             }
         }
     }

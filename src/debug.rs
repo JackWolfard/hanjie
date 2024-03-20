@@ -11,7 +11,8 @@ use bevy::{
 use crate::{
     action::{CellEvent, PuzzleSolveEvent},
     app::AppState,
-    puzzle::{Location, Puzzle},
+    layout::size::EntityResized,
+    puzzle::{Position, Puzzle},
     solve::cell::Cell,
 };
 
@@ -32,7 +33,12 @@ impl Plugin for DebugPlugin {
         .add_systems(
             Update,
             (
-                (snoop_event::<PuzzleSolveEvent>, snoop_event::<CellEvent>).chain(),
+                (
+                    snoop_event::<PuzzleSolveEvent>,
+                    snoop_event::<CellEvent>,
+                    snoop_event::<EntityResized>,
+                )
+                    .chain(),
                 snoop_asset_load::<Puzzle>,
             )
                 .in_set(DebugSet::Events),
@@ -41,7 +47,7 @@ impl Plugin for DebugPlugin {
             PostUpdate,
             print_cell_location
                 .in_set(DebugSet::GlobalTransform)
-                .run_if(in_state(AppState::SolvePuzzle).and_then(run_once())),
+                .run_if(in_state(AppState::Solve).and_then(run_once())),
         );
     }
 }
@@ -52,21 +58,19 @@ pub enum DebugSet {
     GlobalTransform,
 }
 
-fn print_cell_location(query: Query<(&GlobalTransform, &Transform, &Location), With<Cell>>) {
-    for (global_transform, transform, location) in query.iter() {
+fn print_cell_location(query: Query<(&GlobalTransform, &Transform, &Position), With<Cell>>) {
+    for (global_transform, transform, position) in query.iter() {
         let translation = transform.translation;
         let global_translation = global_transform.translation();
-        if let Location::Position(location) = location {
-            debug!(
-                "Cell({},{}) is located at Translation({},{}) and GlobalTranslation({},{})",
-                location.column,
-                location.row,
-                translation.x,
-                translation.y,
-                global_translation.x,
-                global_translation.y
-            );
-        }
+        debug!(
+            "Cell({},{}) is located at Translation({},{}) and GlobalTranslation({},{})",
+            position.column,
+            position.row,
+            translation.x,
+            translation.y,
+            global_translation.x,
+            global_translation.y
+        );
     }
 }
 

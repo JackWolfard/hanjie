@@ -9,26 +9,27 @@ use crate::{
     layout::{
         bounding_box::BoundingBox,
         position::{self, Alignable},
-        size::{self, Resizable},
+        size::{self, EntityResized, Resizable},
     },
-    puzzle::{GridSize, Location, LocationPosition},
-    schedule::PuzzleSolveSet,
+    puzzle::{GridSize, Position},
+    schedule::SolveSet,
 };
 
 const CELL_CLEARED_COLOR: Color = Color::rgb(0.8, 0.8, 0.8);
 const CELL_FILLED_COLOR: Color = Color::rgb(0.36, 0.58, 0.66);
 const CELL_CROSSEDOUT_COLOR: Color = Color::rgb(0.66, 0.36, 0.36);
 const CELL_MARKED_COLOR: Color = Color::rgb(0.54, 0.66, 0.36);
-pub const CELL_SIZE: f32 = 50.0;
-pub const CELL_GUTTER: f32 = 10.0;
 
 pub struct CellPlugin;
 
 impl Plugin for CellPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
+        app.init_resource::<CellSize>().add_systems(
             Update,
-            handle_cell_action.in_set(PuzzleSolveSet::EntityUpdates),
+            (
+                cell_resize.in_set(SolveSet::Events),
+                handle_cell_action.in_set(SolveSet::EntityUpdates),
+            ),
         );
     }
 }
@@ -40,13 +41,18 @@ pub struct CellBundle {
     bounding_box: BoundingBox,
     alignable: Alignable,
     resizable: Resizable,
-    location: Location,
+    position: Position,
     cell: Cell,
 }
 
-#[derive(Component, Default)]
+#[derive(Component, Debug, Default)]
 pub struct Cell {
     state: CellState,
+}
+
+#[derive(Resource, Debug, Default)]
+pub struct CellSize {
+    pub size: f32,
 }
 
 #[derive(Debug, Default, Clone, PartialEq)]
@@ -70,57 +76,45 @@ impl CellState {
 }
 
 impl CellBundle {
-    pub fn new(row: i32, column: i32, size: &GridSize) -> CellBundle {
+    pub fn new(row: i32, column: i32, size: &GridSize) -> Self {
         let cell: Cell = default();
         let color: Color = cell.state.color();
         CellBundle {
             sprite_bundle: SpriteBundle {
-                sprite: Sprite {
-                    color,
-                    custom_size: Some(Vec2::splat(CELL_SIZE)),
-                    ..default()
-                },
+                sprite: Sprite { color, ..default() },
                 visibility: Visibility::Visible,
-                transform: Transform::from_translation(Vec3::from((
-                    Vec2::splat(CELL_SIZE + CELL_GUTTER)
-                        * Vec2::new(
-                            (column - size.columns / 2) as f32,
-                            (row - size.rows / 2) as f32,
-                        ),
-                    0.0,
-                ))),
                 ..default()
             },
-            bounding_box: BoundingBox::new(CELL_SIZE, CELL_SIZE, Color::PINK),
+            bounding_box: BoundingBox::init(Color::PINK),
             alignable: Alignable::new(
                 position::Reference::Parent,
                 position::Alignment::Grid(
                     *size,
-                    LocationPosition { column, row },
+                    Position { column, row },
                     Some(position::Spacing::Even),
                 ),
             ),
             resizable: Resizable::new(
-                size::Reference::Parent,
-                size::Constraint::Pct(1.0 / (size.columns + 1) as f32),
-                size::Constraint::Pct(1.0 / (size.rows + 1) as f32),
+                size::ResizableField {
+                    constraint: size::Constraint::Fr(size.columns + 1),
+                    reference: size::Reference::Parent,
+                },
+                size::ResizableField {
+                    constraint: size::Constraint::Fr(size.rows + 1),
+                    reference: size::Reference::Parent,
+                },
                 Some(AspectRatio::new(1.0, 1.0)),
             ),
-            location: Location::Position(LocationPosition { column, row }),
+            position: Position { column, row },
             cell,
         }
     }
 }
 
-pub fn is_inside_cell(cell_position: Vec3, position: Vec2) -> bool {
-    let c = Vec2::new(
-        cell_position.x - CELL_SIZE / 2.0,
-        cell_position.y - CELL_SIZE / 2.0,
-    );
-    position.x >= c.x
-        && position.y >= c.y
-        && position.x <= c.x + CELL_SIZE
-        && position.y <= c.y + CELL_SIZE
+pub fn is_inside_cell(cell_size: &CellSize, cell_position: Vec3, position: Vec2) -> bool {
+    let size = cell_size.size;
+    let c = cell_position.xy() - Vec2::splat(size / 2.0);
+    position.x >= c.x && position.y >= c.y && position.x <= c.x + size && position.y <= c.y + size
 }
 
 fn handle_cell_action(
@@ -150,4 +144,18 @@ fn apply_action_to_cell(action: &PuzzleSolveAction, cell: &mut Cell) {
 
 fn update_cell_sprite(cell: &Cell, sprite: &mut Sprite) {
     sprite.color = cell.state.color();
+}
+
+fn cell_resize(
+    mut events: EventReader<EntityResized>,
+    mut cell_size: ResMut<CellSize>,
+    mut cell_q: Query<&mut Sprite, With<Cell>>,
+) {
+    for EntityResized { entity, size } in events.read() {
+        if let Ok(mut sprite) = cell_q.get_mut(*entity) {
+            // hack: cell size changes many times over since many cells resize
+            cell_size.size = size.min_element();
+            sprite.custom_size = Some(*size);
+        }
+    }
 }

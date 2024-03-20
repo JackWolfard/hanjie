@@ -22,6 +22,10 @@ pub struct BoundingBox {
 }
 
 impl BoundingBox {
+    pub fn init(color: Color) -> Self {
+        Self::new(50.0, 100.0, color)
+    }
+
     pub fn new(width: f32, height: f32, color: Color) -> Self {
         Self {
             primitive: Rectangle::new(width, height),

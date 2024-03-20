@@ -12,7 +12,7 @@ use crate::{
     action::{PuzzleSolveAction, PuzzleSolveEvent, PuzzleSolveState},
     app::AppState,
     camera::MainCamera,
-    schedule::{PuzzleSelectSet, PuzzleSolveSet},
+    schedule::{SelectSet, SolveSet},
 };
 
 pub struct InputPlugin;
@@ -23,11 +23,11 @@ impl Plugin for InputPlugin {
             Update,
             (handle_puzzle_solve_key_press, handle_puzzle_solve_click)
                 .chain()
-                .in_set(PuzzleSolveSet::UserInput),
+                .in_set(SolveSet::UserInput),
         )
         .add_systems(
             Update,
-            bevy::window::close_on_esc.in_set(PuzzleSelectSet::UserInput),
+            bevy::window::close_on_esc.in_set(SelectSet::UserInput),
         );
     }
 }
@@ -67,7 +67,7 @@ fn handle_puzzle_solve_key_press(
     keys: Res<ButtonInput<KeyCode>>,
 ) {
     if keys.just_pressed(KeyCode::Escape) {
-        next_state.set(AppState::SelectPuzzle);
+        next_state.set(AppState::Select);
     }
 }
 
