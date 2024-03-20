@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use bevy::prelude::*;
+use bevy::{math::AspectRatio, prelude::*};
 
 use crate::{
     layout::{
@@ -10,7 +10,7 @@ use crate::{
         position::{self, Alignable},
         size::{self, Resizable},
     },
-    puzzle::{Constraint, GridSize},
+    puzzle::{Condition, Constraint, GridSize, Line},
 };
 
 pub struct ConstraintPlugin;
@@ -29,11 +29,6 @@ struct ConstraintBundle {
     resizable: Resizable,
 }
 
-// root: cyan
-// grid: green
-// cell: pink
-// constraint: yellow
-
 impl ConstraintBundle {
     fn new(constraint: Constraint, size: &GridSize) -> Self {
         let (alignable, resizable) = match constraint {
@@ -43,7 +38,7 @@ impl ConstraintBundle {
                     position::Alignment::Line(*size, line),
                 );
                 let resizable = match line {
-                    crate::puzzle::Line::Column(_) => Resizable::new(
+                    Line::Column(_) => Resizable::new(
                         size::ResizableField {
                             constraint: size::Constraint::Fr(size.columns),
                             reference: size::Reference::Parent,
@@ -57,7 +52,7 @@ impl ConstraintBundle {
                         },
                         None,
                     ),
-                    crate::puzzle::Line::Row(_) => Resizable::new(
+                    Line::Row(_) => Resizable::new(
                         size::ResizableField {
                             constraint: size::Constraint::Fill,
                             reference: size::Reference::Intersect(
@@ -87,6 +82,60 @@ impl ConstraintBundle {
     }
 }
 
+#[derive(Bundle)]
+struct ConditionBundle {
+    condition: Condition,
+    #[bundle()]
+    spatial_bundle: SpatialBundle,
+    bounding_box: BoundingBox,
+    alignable: Alignable,
+    resizable: Resizable,
+}
+
+impl ConditionBundle {
+    fn new(condition: Condition, line: Line) -> Self {
+        let alignment = match line {
+            Line::Column(_) => position::Alignment::Standard(
+                position::VerticalAlign::Center,
+                position::HorizontalAlign::Center,
+            ),
+            Line::Row(_) => position::Alignment::Standard(
+                position::VerticalAlign::Center,
+                position::HorizontalAlign::Center,
+            ),
+        };
+        let alignable = Alignable::new(position::Reference::Parent, alignment);
+
+        let resizable = Resizable::new(
+            size::ResizableField {
+                constraint: size::Constraint::Fill,
+                reference: size::Reference::Parent,
+            },
+            size::ResizableField {
+                constraint: size::Constraint::Fill,
+                reference: size::Reference::Parent,
+            },
+            Some(AspectRatio::new(1.0, 1.0)),
+        );
+
+        Self {
+            condition,
+            spatial_bundle: SpatialBundle::default(),
+            bounding_box: BoundingBox::init(Color::ORANGE),
+            alignable,
+            resizable,
+        }
+    }
+}
+
 pub(super) fn spawn(builder: &mut ChildBuilder, constraint: Constraint, size: &GridSize) {
-    builder.spawn(ConstraintBundle::new(constraint, size));
+    builder
+        .spawn(ConstraintBundle::new(constraint.clone(), size))
+        .with_children(|parent| {
+            if let Constraint::Line(line, conditions) = constraint {
+                for condition in conditions.iter() {
+                    parent.spawn(ConditionBundle::new(*condition, line));
+                }
+            }
+        });
 }

@@ -151,7 +151,7 @@ fn cell_resize(
     mut cell_size: ResMut<CellSize>,
     mut cell_q: Query<&mut Sprite, With<Cell>>,
 ) {
-    for EntityResized { entity, size } in events.read() {
+    for EntityResized { entity, size, .. } in events.read() {
         if let Ok(mut sprite) = cell_q.get_mut(*entity) {
             // hack: cell size changes many times over since many cells resize
             cell_size.size = size.min_element();

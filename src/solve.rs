@@ -27,7 +27,12 @@ impl Plugin for SolvePlugin {
         app.add_plugins(CellPlugin)
             .add_plugins(ConstraintPlugin)
             .add_plugins(GridPlugin)
-            .add_systems(OnEnter(AppState::Solve), spawn.in_set(SolveSet::OnEnter))
+            .add_systems(
+                OnEnter(AppState::Solve),
+                (spawn, flow_initial_layout)
+                    .chain()
+                    .in_set(SolveSet::OnEnter),
+            )
             .add_systems(OnExit(AppState::Solve), despawn.in_set(SolveSet::OnExit));
     }
 }
@@ -63,20 +68,21 @@ impl SolvePuzzleBundle {
     }
 }
 
-fn spawn(
-    mut commands: Commands,
-    camera_q: Query<&Camera, With<MainCamera>>,
-    active_puzzle: Res<ActivePuzzle>,
-    mut layout_ev: EventWriter<size::WindowResized>,
-) {
+fn spawn(mut commands: Commands, active_puzzle: Res<ActivePuzzle>) {
     let puzzle = active_puzzle.puzzle.as_ref().unwrap();
-    let camera = camera_q.single();
-    let view = camera.logical_viewport_size().unwrap();
     commands
         .spawn((SolvePuzzleBundle::new(), SolvePuzzleRoot))
         .with_children(|parent| grid::spawn(parent, puzzle));
+}
+
+fn flow_initial_layout(
+    _camera_q: Query<&Camera, With<MainCamera>>,
+    mut _layout_ev: EventWriter<size::WindowResized>,
+) {
+    // let camera = camera_q.single();
+    // let view = camera.logical_viewport_size().unwrap();
     // trick to initialize size w/o explicit sizes
-    layout_ev.send(size::WindowResized { size: view });
+    // layout_ev.send(size::WindowResized { size: view });
 }
 
 fn despawn(mut commands: Commands, query: Query<Entity, With<SolvePuzzleRoot>>) {

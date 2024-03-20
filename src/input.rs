@@ -12,6 +12,7 @@ use crate::{
     action::{PuzzleSolveAction, PuzzleSolveEvent, PuzzleSolveState},
     app::AppState,
     camera::MainCamera,
+    layout::size,
     schedule::{SelectSet, SolveSet},
 };
 
@@ -65,9 +66,17 @@ fn map_click_to_in_game_action(
 fn handle_puzzle_solve_key_press(
     mut next_state: ResMut<NextState<AppState>>,
     keys: Res<ButtonInput<KeyCode>>,
+    camera_q: Query<&Camera, With<MainCamera>>,
+    mut layout_ev: EventWriter<size::WindowResized>,
 ) {
     if keys.just_pressed(KeyCode::Escape) {
         next_state.set(AppState::Select);
+    } else if keys.just_pressed(KeyCode::KeyR) {
+        debug!("Jack: flow a window resize");
+        let camera = camera_q.single();
+        let view = camera.logical_viewport_size().unwrap();
+        // trick to initialize size w/o explicit sizes
+        layout_ev.send(size::WindowResized { size: view });
     }
 }
 

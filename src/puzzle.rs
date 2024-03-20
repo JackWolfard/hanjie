@@ -103,7 +103,7 @@ impl From<Position> for Vec2 {
     }
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone, Copy)]
+#[derive(Component, Deserialize, Serialize, Debug, Clone, Copy)]
 pub enum Condition {
     Number(i32),
     Wildcard,

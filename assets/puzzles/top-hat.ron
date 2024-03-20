@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Jack Wolfard
+//
+// SPDX-License-Identifier: Apache-2.0
+
 Puzzle(
   name: "Top Hat",
   grid: GridSize(

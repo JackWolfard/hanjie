@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use bevy::prelude::*;
+use bevy::{ecs::entity::EntityHashSet, prelude::*};
 
 use crate::{
     layout::{bounding_box::BoundingBox, schedule::LayoutSet, size::EntityResized},
@@ -13,15 +13,17 @@ pub struct PositionPlugin;
 
 impl Plugin for PositionPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<EntityRealign>()
-            .add_systems(Update, (child_realign, realign).in_set(LayoutSet::Position));
+        app.add_event::<EntityRealigned>().add_systems(
+            Update,
+            (child_realign, self_realign, realign).in_set(LayoutSet::Position),
+        );
     }
 }
 
 #[derive(Event, Debug)]
-struct EntityRealign {
-    entity: Entity,
-    position: Vec2,
+pub struct EntityRealigned {
+    pub entity: Entity,
+    pub position: Vec2,
 }
 
 #[derive(Component)]
@@ -50,12 +52,11 @@ pub enum Alignment {
 }
 
 impl Alignment {
-    fn apply(&self, reference_center: Vec2, reference_size: Vec2, size: Vec2) -> Vec2 {
+    fn apply(&self, reference_size: Vec2, size: Vec2) -> Vec2 {
         match self {
             Alignment::Standard(vertical, horizontal) => {
-                let x =
-                    Align::from(*horizontal).apply(reference_center.x, reference_size.x, size.x);
-                let y = Align::from(*vertical).apply(reference_center.y, reference_size.y, size.y);
+                let x = Align::from(*horizontal).apply(reference_size.x, size.x);
+                let y = Align::from(*vertical).apply(reference_size.y, size.y);
                 Vec2::new(x, y)
             }
             Alignment::Grid(grid, position, spacing) => {
@@ -149,25 +150,44 @@ impl From<HorizontalAlign> for Align {
 }
 
 impl Align {
-    fn apply(&self, reference_center: f32, reference_size: f32, size: f32) -> f32 {
+    fn apply(&self, reference_size: f32, size: f32) -> f32 {
         match self {
-            Align::Start => reference_center - reference_size / 2.0 + size / 2.0,
-            Align::Center => reference_center,
-            Align::End => reference_center + reference_size / 2.0 - size / 2.0,
+            Align::Start => -reference_size / 2.0 + size / 2.0,
+            Align::Center => 0.0,
+            Align::End => reference_size / 2.0 - size / 2.0,
+        }
+    }
+}
+
+fn self_realign(
+    mut size_ev: EventReader<EntityResized>,
+    align_q: Query<(Entity, &Alignable, &Parent)>,
+    bounding_box_q: Query<&BoundingBox>,
+    mut align_ev: EventWriter<EntityRealigned>,
+) {
+    for resize in size_ev.read() {
+        if let Ok((entity, alignable, parent)) = align_q.get(resize.entity) {
+            if let Ok(parent_bounding_box) = bounding_box_q.get(parent.get()) {
+                align_ev.send(EntityRealigned {
+                    entity,
+                    position: alignable
+                        .alignment
+                        .apply(parent_bounding_box.size(), resize.size),
+                });
+            }
         }
     }
 }
 
 fn child_realign(
     mut size_ev: EventReader<EntityResized>,
-    parent_q: Query<(&Transform, &BoundingBox, &Children)>,
+    parent_q: Query<(&BoundingBox, &Children)>,
     child_q: Query<(&Alignable, &BoundingBox), With<Parent>>,
-    mut align_ev: EventWriter<EntityRealign>,
+    mut align_ev: EventWriter<EntityRealigned>,
 ) {
     for EntityResized { entity: parent, .. } in size_ev.read() {
-        // get parent's center & size
-        if let Ok((transform, bounding_box, children)) = parent_q.get(*parent) {
-            let parent_center = transform.translation.xy();
+        // get parent's size
+        if let Ok((bounding_box, children)) = parent_q.get(*parent) {
             let parent_size = bounding_box.size();
             for child in children {
                 if let Ok((
@@ -179,25 +199,28 @@ fn child_realign(
                 )) = child_q.get(*child)
                 {
                     let child_size = bounding_box.size();
-                    align_ev.send(EntityRealign {
+                    align_ev.send(EntityRealigned {
                         entity: *child,
-                        position: alignment.apply(parent_center, parent_size, child_size),
+                        position: alignment.apply(parent_size, child_size),
                     });
                 }
             }
         }
-
-        //
     }
 }
 
 fn realign(
-    mut events: EventReader<EntityRealign>,
+    mut events: EventReader<EntityRealigned>,
     mut align_q: Query<&mut Transform, With<Alignable>>,
 ) {
-    for EntityRealign { entity, position } in events.read() {
-        if let Ok(mut transform) = align_q.get_mut(*entity) {
-            transform.translation = position.extend(transform.translation.z);
+    let mut set = EntityHashSet::default();
+    for event in events.read() {
+        if set.insert(event.entity) {
+            if let Ok(mut transform) = align_q.get_mut(event.entity) {
+                transform.translation = event.position.extend(transform.translation.z);
+            }
+        } else {
+            debug!("Entity already in realign set");
         }
     }
 }

@@ -1,5 +1,10 @@
+// SPDX-FileCopyrightText: 2022 anikina2021 
+//
+// SPDX-License-Identifier: LicenseRef-Proprietary
+//
 // Link: nonograms.org (https://www.nonograms.org/nonograms/i/53610)
 // Author: anikina2021 (https://www.nonograms.org/user/154007)
+
 Puzzle(
   name: "Bat",
   grid: GridSize(

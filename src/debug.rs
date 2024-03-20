@@ -11,8 +11,11 @@ use bevy::{
 use crate::{
     action::{CellEvent, PuzzleSolveEvent},
     app::AppState,
-    layout::size::EntityResized,
-    puzzle::{Position, Puzzle},
+    layout::{
+        position::EntityRealigned,
+        size::{EntityResized, WindowResized},
+    },
+    puzzle::Position,
     solve::cell::Cell,
 };
 
@@ -33,14 +36,13 @@ impl Plugin for DebugPlugin {
         .add_systems(
             Update,
             (
-                (
-                    snoop_event::<PuzzleSolveEvent>,
-                    snoop_event::<CellEvent>,
-                    snoop_event::<EntityResized>,
-                )
-                    .chain(),
-                snoop_asset_load::<Puzzle>,
+                snoop_event::<PuzzleSolveEvent>,
+                snoop_event::<CellEvent>,
+                snoop_event::<WindowResized>,
+                snoop_event::<EntityResized>,
+                snoop_event::<EntityRealigned>,
             )
+                .chain()
                 .in_set(DebugSet::Events),
         )
         .add_systems(
@@ -74,18 +76,18 @@ fn print_cell_location(query: Query<(&GlobalTransform, &Transform, &Position), W
     }
 }
 
-fn snoop_asset_load<T: Asset + std::fmt::Debug>(
-    mut events: EventReader<AssetEvent<T>>,
-    assets: Res<Assets<T>>,
-) {
-    for event in events.read() {
-        if let AssetEvent::LoadedWithDependencies { id } = event {
-            if let Some(asset) = assets.get(*id) {
-                debug!("Snoop Asset Loaded: {:#?}", asset)
-            }
-        }
-    }
-}
+// fn snoop_asset_load<T: Asset + std::fmt::Debug>(
+//     mut events: EventReader<AssetEvent<T>>,
+//     assets: Res<Assets<T>>,
+// ) {
+//     for event in events.read() {
+//         if let AssetEvent::LoadedWithDependencies { id } = event {
+//             if let Some(asset) = assets.get(*id) {
+//                 debug!("Snoop Asset Loaded: {:#?}", asset)
+//             }
+//         }
+//     }
+// }
 
 fn snoop_event<T: Event + std::fmt::Debug>(mut events: EventReader<T>) {
     for event in events.read() {
